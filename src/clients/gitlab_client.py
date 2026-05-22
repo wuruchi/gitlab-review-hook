@@ -175,11 +175,7 @@ class GitLabClient:
             ) from exc
 
         if response.status_code not in {200, 201}:
-            raise GitLabAPIError(
-                "GitLab API returned an unexpected status: "
-                f"{response.status_code}",
-                status_code=response.status_code,
-            )
+            raise self._build_http_error(response.status_code, endpoint)
 
         payload = response.json()
         if not isinstance(payload, dict):
@@ -209,3 +205,22 @@ class GitLabClient:
                 parsed_changes.append(parsed_change)
 
         return parsed_changes
+
+    def _build_http_error(
+        self,
+        status_code: int,
+        endpoint: str,
+    ) -> GitLabAPIError:
+        """Build a GitLab API error with additional endpoint context."""
+
+        message = (
+            "GitLab API returned an unexpected status: "
+            f"{status_code} for {endpoint}"
+        )
+        if status_code == 404:
+            message += (
+                ". Check GITLAB_BASE_URL, project ID, merge request IID, "
+                "and whether the token can access the target resource."
+            )
+
+        return GitLabAPIError(message, status_code=status_code)

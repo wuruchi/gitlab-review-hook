@@ -195,3 +195,23 @@ def test_post_inline_discussion_posts_targeted_line_comment(
             "new_line": 42,
         },
     }
+
+
+def test_post_merge_request_comment_raises_helpful_404_error(
+    requests_mock: object,
+) -> None:
+    client = GitLabClient(
+        base_url="https://gitlab.example.com/api/v4",
+        token="secret-token",
+    )
+    endpoint = (
+        "https://gitlab.example.com/api/v4/projects/123/"
+        "merge_requests/456/notes"
+    )
+    requests_mock.post(endpoint, status_code=404)
+
+    with pytest.raises(
+        GitLabAPIError,
+        match="Check GITLAB_BASE_URL, project ID, merge request IID",
+    ):
+        client.post_merge_request_comment(123, 456, "Review started")

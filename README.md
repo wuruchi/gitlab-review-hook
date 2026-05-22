@@ -43,6 +43,27 @@ Or use the installed console script:
 gitlab-review-hook
 ```
 
+## Run The Handler Locally
+
+Load environment variables from `.env` and invoke the Lambda handler with a
+generated sample GitLab note event:
+
+```bash
+python scripts/run_local_handler.py --print-event
+```
+
+Pass a full Lambda event from disk instead:
+
+```bash
+python scripts/run_local_handler.py --event-file sample_event.json --print-event
+```
+
+A ready-made sample event is included at [sample_event.json](/Users/wilmeruruchi/Projects/gitlab-review-hook/sample_event.json).
+
+The script expects the same environment variables used by the handler and LLM
+provider, including `GITLAB_WEBHOOK_SECRET`, `GITLAB_TOKEN`,
+`AWS_BEARER_TOKEN_BEDROCK`, and `AWS_REGION`.
+
 ## Run Tests
 
 Run the full test suite with pytest:

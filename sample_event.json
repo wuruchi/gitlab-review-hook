@@ -1,0 +1,6 @@
+{
+  "headers": {
+    "X-Gitlab-Token": "secret"
+  },
+  "body": "{\"object_kind\":\"note\",\"project\":{\"id\":26741143},\"merge_request\":{\"iid\":853,\"source_branch\":\"PANDA-3563-update-tags\"},\"object_attributes\":{\"note\":\"Please /review this merge request.\"}}"
+}
