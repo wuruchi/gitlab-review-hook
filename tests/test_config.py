@@ -8,19 +8,20 @@ from src.config_loader import ConfigLoaderError, load_config
 def test_load_config_parses_valid_yaml(tmp_path: Path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        """
-llm:
-  provider: "gemini"
-  model: "gemini-1.5-pro"
-  system_prompt: "Review this diff."
-""".strip(),
+        (
+            'llm:\n'
+            '  provider: "bedrock"\n'
+            '  model: "us.anthropic.claude-sonnet-4-6"\n'
+            '  region: "us-east-1"\n'
+            '  system_prompt: "Review this diff."\n'
+        ),
         encoding="utf-8",
     )
 
     config = load_config(config_file)
-
-    assert config["llm"]["provider"] == "gemini"
-    assert config["llm"]["model"] == "gemini-1.5-pro"
+    assert config["llm"]["provider"] == "bedrock"
+    assert config["llm"]["model"] == "us.anthropic.claude-sonnet-4-6"
+    assert config["llm"]["region"] == "us-east-1"
     assert config["llm"]["system_prompt"] == "Review this diff."
 
 
