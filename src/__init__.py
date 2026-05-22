@@ -1,0 +1,1 @@
+"""GitLab review hook package."""

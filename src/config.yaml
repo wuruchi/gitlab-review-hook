@@ -1,0 +1,4 @@
+llm:
+  provider: "gemini"
+  model: "gemini-1.5-pro"
+  system_prompt: "You are a senior staff software engineer. Review the following code diff inside its file context..."
