@@ -7,11 +7,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from src.lambda_response import AUTHORIZED_RESPONSE
-from src.lambda_response import IGNORED_RESPONSE
-from src.lambda_response import LambdaResponse
-from src.lambda_response import UNAUTHORIZED_RESPONSE
-from src.webhook_payload import GitLabWebhookPayload
+from src.models.lambda_event import LambdaEvent
+from src.models.lambda_response import AUTHORIZED_RESPONSE
+from src.models.lambda_response import IGNORED_RESPONSE
+from src.models.lambda_response import LambdaResponse
+from src.models.lambda_response import UNAUTHORIZED_RESPONSE
+from src.models.webhook_payload import GitLabWebhookPayload
 
 
 def _get_gitlab_token(headers: dict[str, Any] | None) -> str | None:
@@ -63,6 +64,15 @@ def _parse_body(body: Any) -> GitLabWebhookPayload | None:
         return None
 
 
+def _parse_event(event: Any) -> LambdaEvent | None:
+    """Parse the incoming Lambda event into a typed wrapper."""
+
+    try:
+        return LambdaEvent.model_validate(event)
+    except ValidationError:
+        return None
+
+
 def _should_process_event(payload: GitLabWebhookPayload) -> bool:
     """Return whether the webhook payload is a supported review request."""
 
@@ -79,11 +89,11 @@ def lambda_handler(
 
     del context
 
-    headers = event.get("headers")
-    if not _is_authorized(headers):
+    parsed_event = _parse_event(event)
+    if parsed_event is None or not _is_authorized(parsed_event.headers):
         return _to_lambda_dict(UNAUTHORIZED_RESPONSE)
 
-    payload = _parse_body(event.get("body"))
+    payload = _parse_body(parsed_event.body)
     if payload is None or not _should_process_event(payload):
         return _to_lambda_dict(IGNORED_RESPONSE)
 
