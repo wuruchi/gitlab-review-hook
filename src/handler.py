@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import hmac
+import json
 import os
 from typing import Any
 
+from pydantic import ValidationError
 
-UNAUTHORIZED_RESPONSE = {
-    "statusCode": 401,
-    "body": "Unauthorized",
-}
+from src.lambda_response import AUTHORIZED_RESPONSE
+from src.lambda_response import IGNORED_RESPONSE
+from src.lambda_response import LambdaResponse
+from src.lambda_response import UNAUTHORIZED_RESPONSE
+from src.webhook_payload import GitLabWebhookPayload
 
 
 def _get_gitlab_token(headers: dict[str, Any] | None) -> str | None:
@@ -40,18 +43,54 @@ def _is_authorized(headers: dict[str, Any] | None) -> bool:
     return hmac.compare_digest(provided_token, expected_token)
 
 
+def _parse_body(body: Any) -> GitLabWebhookPayload | None:
+    """Parse the incoming JSON body into a typed webhook payload."""
+
+    if not isinstance(body, str):
+        return None
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+
+    try:
+        return GitLabWebhookPayload.model_validate(payload)
+    except ValidationError:
+        return None
+
+
+def _should_process_event(payload: GitLabWebhookPayload) -> bool:
+    """Return whether the webhook payload is a supported review request."""
+
+    if payload.object_kind != "note":
+        return False
+
+    return "/review" in payload.object_attributes.note
+
+
 def lambda_handler(
     event: dict[str, Any], context: Any
 ) -> dict[str, Any]:
-    """Authenticate the incoming webhook request."""
+    """Authenticate and filter the incoming webhook request."""
 
     del context
 
     headers = event.get("headers")
     if not _is_authorized(headers):
-        return UNAUTHORIZED_RESPONSE
+        return _to_lambda_dict(UNAUTHORIZED_RESPONSE)
 
-    return {
-        "statusCode": 200,
-        "body": "Authorized",
-    }
+    payload = _parse_body(event.get("body"))
+    if payload is None or not _should_process_event(payload):
+        return _to_lambda_dict(IGNORED_RESPONSE)
+
+    return _to_lambda_dict(AUTHORIZED_RESPONSE)
+
+
+def _to_lambda_dict(response: LambdaResponse) -> dict[str, Any]:
+    """Convert a typed response model to the Lambda return shape."""
+
+    return response.model_dump()
